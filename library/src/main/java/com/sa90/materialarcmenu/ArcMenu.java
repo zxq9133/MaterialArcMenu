@@ -123,20 +123,23 @@ public class ArcMenu extends FrameLayout {
         layoutChildrenArc();
     }
 
-    private void layoutChildrenArc() {
-        int childCount = getChildCount();
-        double eachAngle = getEachArcAngleInDegrees();
-
+    /**
+     * @param start child start Index
+     * @param end   child end Index
+     * @param radius    child radius
+     */
+    private void layoutChildMenus(int start, int end, float radius) {
+        int childCount = end - start;
+        double eachAngle = mQuadrantAngle / ((double) childCount - 1);
         int leftPoint, topPoint, left, top;
-
-        for (int i = 0; i < childCount; i++) {
-            View child = getChildAt(i);
+        for (int i = 0; i < end - start; i++) {
+            View child = getChildAt(start + i);
             if(child == fabMenu || child.getVisibility() == GONE)
                 continue;
             else {
                 double totalAngleForChild = eachAngle * (i);
-                leftPoint = (int) (mCurrentRadius * Math.cos(Math.toRadians(totalAngleForChild)));
-                topPoint = (int) (mCurrentRadius * Math.sin(Math.toRadians(totalAngleForChild)));
+                leftPoint = (int) (radius * Math.cos(Math.toRadians(totalAngleForChild)));
+                topPoint = (int) (radius * Math.sin(Math.toRadians(totalAngleForChild)));
 
                 if(mMenuSideEnum == MenuSideEnum.ARC_RIGHT) {
                     left = cx + leftPoint;
@@ -146,10 +149,13 @@ public class ArcMenu extends FrameLayout {
                     left = cx - leftPoint;
                     top = cy - topPoint;
                 }
-
                 child.layout(left, top, left + child.getMeasuredWidth(), top + child.getMeasuredHeight());
             }
         }
+    }
+
+    private void layoutChildrenArc() {
+        layoutChildMenus(0, getChildCount() - 1, mCurrentRadius);
     }
 
     /**
@@ -211,7 +217,7 @@ public class ArcMenu extends FrameLayout {
 
         width+= menuMargin;
         height+= menuMargin;
-        setMeasuredDimension(width, height);
+        setMeasuredDimension(width , height);
     }
 
     /**
@@ -309,6 +315,18 @@ public class ArcMenu extends FrameLayout {
         animatorSet.start();
     }
 
+    private void openMenu(View view) {
+        ObjectAnimator animator = ObjectAnimator.ofFloat(view , "rotation", 0, -155, -135);
+        animator.setDuration(mAnimationTime / 2);
+        animator.start();
+    }
+
+    private void closeMenu(View view) {
+        ObjectAnimator animator = ObjectAnimator.ofFloat(view , "rotation", -135, 20, 0);
+        animator.setDuration(mAnimationTime / 2);
+        animator.start();
+    }
+
     private void beginCloseAnimation() {
         ValueAnimator closeMenuAnimator = ValueAnimator.ofFloat(mFinalRadius, 0);
         closeMenuAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -395,10 +413,14 @@ public class ArcMenu extends FrameLayout {
     //ALL API Calls
     public void toggleMenu() {
         mIsOpened = !mIsOpened;
-        if(mIsOpened)
+        if(mIsOpened) {
+            openMenu(fabMenu);
             beginOpenAnimation();
-        else
+        }
+        else {
             beginCloseAnimation();
+            closeMenu(fabMenu);
+        }
     }
 
     public boolean isMenuOpened() {
